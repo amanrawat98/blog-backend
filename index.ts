@@ -4,7 +4,6 @@ import { connectDb } from "./src/config/connect";
 import cookieParser from "cookie-parser";
 import authRouter from "./src/routes/userAuth";
 import { errorHandler } from "./middleware";
-import { verifyJwtToken } from "./src/utility/generateJwtToken";
 // import { errorHandler } from "../middleware";
 
 dotenv.config();
@@ -19,7 +18,6 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use("/auth", authRouter);
 app.use(errorHandler);
-app.use(verifyJwtToken);
 app.get("/", (req: Request, res: Response) => {
   res.send("Express + TypeScript Server");
 });
