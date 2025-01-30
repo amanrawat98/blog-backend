@@ -1,6 +1,6 @@
 import {z} from "zod";
 
-export const createBlogSchema = z.object({
+export const createAndUpdateBlogSchema = z.object({
   title: z.string().min(4, "Title should be at least 4 characters"),
   content: z.string(),
   thumbnail: z.object({
