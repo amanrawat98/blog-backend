@@ -56,9 +56,13 @@ export const createNewBlog = async (data: NewBlogData): Promise<null | any> => {
   return await blog.save();
 };
 
-export const getAllBlogsByStatus = async (status: string)=> await Blog.find({status});
-export const getBlogs = async ()=> await Blog.find({});
-export const getBlogByid = async (id: string)=> await Blog.findById(id);
+export const handleUpdateBlog = async (blogid: string, blogData: NewBlogData): Promise<null | any> => {
+  return await Blog.findByIdAndUpdate(blogid, blogData, { new: true });
+};
+
+export const getAllBlogsByStatus = async (status: string) => await Blog.find({ status });
+export const getBlogs = async () => await Blog.find({});
+export const getBlogByid = async (id: string) => await Blog.findById(id);
 
 export const handleUpdateBlogStatus = async (id: string, status:string)=> await Blog.findByIdAndUpdate(id, {status}, {new:true})
 //Fields: `_id`, `title`, `content`, `authorId`, `status` ("pending", "approved", "rejected"), `createdAt`, `updatedAt`.
