@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { asyncHandler } from "../utility/asyncHandler";
-import { createNewBlog, getAllBlogsByStatus, getBlogByid, getBlogs, handleUpdateBlogStatus } from "../models/Blog";
-import { blogStatusSchema, createBlogSchema } from "../schemas/blogSchema";
+import { createNewBlog, getAllBlogsByStatus, getBlogByid, getBlogs, handleUpdateBlog, handleUpdateBlogStatus } from "../models/Blog";
+import { blogStatusSchema, createAndUpdateBlogSchema } from "../schemas/blogSchema";
 import { sendEmail } from "../utility/email";
 import { getUserById } from "../models/User";
 import { uploadFileToCloudinary } from "../config/cloudinary/cloudinaryUpload";
@@ -10,7 +10,7 @@ export const createBlog = asyncHandler(async (req: Request, res: Response, next:
   const { title, content } = req.body || {};
   const file = req.file ? req.file : null;
 
-  const validatedData = await createBlogSchema.safeParse({
+  const validatedData = await createAndUpdateBlogSchema.safeParse({
     title,
     content,
     thumbnail: file,
@@ -57,6 +57,64 @@ export const createBlog = asyncHandler(async (req: Request, res: Response, next:
 
   res.status(201).json({ message: "Blog created successfully", success: true });
   return;
+});
+
+export const updateBlog = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  const { title, content } = req.body || {};
+  const file = req.file ? req.file : null;
+  const blogid = req.params.id;
+  if (!blogid) {
+    res.status(400).json({ message: "No blog id provided", success: false });
+    return;
+  }
+
+  const validatedData = await createAndUpdateBlogSchema.safeParse({
+    title,
+    content,
+    thumbnail: file,
+  });
+
+  if (!validatedData.success) {
+    const errorMessages = validatedData.error.errors.map((err) => {
+      if (err.code === "unrecognized_keys") {
+        return `Invalid Field Inserted`;
+      }
+      return err.message;
+    });
+    res.status(400).json({ message: "Invalid Input Data", success: false, error: errorMessages });
+    return;
+  }
+
+  const user = req?.user;
+
+  if (!user) {
+    res.status(400).json({ message: "User is not available", success: false });
+    return;
+  }
+
+  if (user.role !== "author") {
+    res.status(400).json({ message: "Only author can create a blog post", success: false });
+    return;
+  }
+
+  const fileBuffer = req.file.buffer;
+  const response = await uploadFileToCloudinary(fileBuffer);
+
+  const blogData = {
+    title,
+    content,
+    authorId: user.id,
+    status: "pending",
+    imageUrl: response?.secure_url,
+  };
+
+  const updatedBlog = await handleUpdateBlog(blogid, blogData);
+
+  if (!updatedBlog) {
+    res.status(400).json({ message: "Error in updaing blog", success: false });
+    return;
+  }
+  res.status(200).json({ message: "Blog updated successfully", success: true });
 });
 
 export const getAllBlogs = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
